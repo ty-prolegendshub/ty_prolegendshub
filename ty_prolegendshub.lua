@@ -8,6 +8,7 @@ local SliderFrame, SliderButton, SliderLabel, SliderStroke
 local TitleLabel, NoclipButton, UIStroke3, InfJumpButton, UIStroke4
 local ChatTpButton, UIStroke5
 local AutoEButton, UIStroke6 -- Thêm biến cho nút Auto E mới
+local HopVipButton, UIStroke7 -- [THÊM MỚI] Biến cho nút Server VIP
 
 local _G = _G or {}
 _G.InstantSkipE = _G.InstantSkipE or false
@@ -16,6 +17,46 @@ _G.Noclip = _G.Noclip or false
 _G.InfJump = _G.InfJump or false
 _G.ChatTP = _G.ChatTP or false
 _G.AutoClickE = _G.AutoClickE or false -- Thêm biến trạng thái Auto Click E
+
+-- [THÊM MỚI] Hàm xử lý nhảy sang Server trống (Server VIP)
+local function HopToVipServer()
+    local HttpService = game:GetService("HttpService")
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local placeId = game.PlaceId
+    
+    local success, result = pcall(function()
+        -- Gửi request lấy danh sách các server công khai hiện tại
+        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"))
+    end)
+    
+    if success and result and result.data then
+        local targetServerToken = nil
+        -- Duyệt qua danh sách để tìm server không có ai hoặc ít người nhất có thể
+        for _, server in pairs(result.data) do
+            if server.playing == 0 and server.id ~= game.JobId then
+                targetServerToken = server.id
+                break
+            end
+        end
+        
+        -- Nếu tìm thấy server trống, thực hiện dịch chuyển
+        if targetServerToken then
+            TeleportService:TeleportToPlaceInstance(placeId, targetServerToken, Players.LocalPlayer)
+        else
+            -- Nếu không tìm thấy server 0 người, tìm server có số lượng người ít nhất
+            for _, server in pairs(result.data) do
+                if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                    targetServerToken = server.id
+                    break
+                end
+            end
+            if targetServerToken then
+                TeleportService:TeleportToPlaceInstance(placeId, targetServerToken, Players.LocalPlayer)
+            end
+        end
+    end
+end
 
 local function BuildGUI()
     if not TY_PROLEGENDS:FindFirstChild("MainFrame") then
@@ -27,8 +68,8 @@ local function BuildGUI()
         MainFrame.ScaleType = Enum.ScaleType.Stretch
         MainFrame.ImageTransparency = 0 
         MainFrame.Position = UDim2.new(0.1, 0, 0.4, 0)
-        -- Tăng nhẹ chiều cao Frame từ 300 lên 335 để vừa khít nút Auto E mới
-        MainFrame.Size = UDim2.new(0, 160, 0, 335)
+        -- [CẬP NHẬT] Tăng chiều cao từ 335 lên 370 để chứa thêm nút Server VIP mới
+        MainFrame.Size = UDim2.new(0, 160, 0, 370)
         MainFrame.Active = true
         MainFrame.Draggable = true
 
@@ -202,7 +243,6 @@ local function BuildGUI()
             end
         end)
 
-        -- [THÊM MỚI] Nút chức năng Auto Click E
         AutoEButton = Instance.new("TextButton")
         AutoEButton.Name = "AutoEButton"
         AutoEButton.Parent = MainFrame
@@ -234,12 +274,38 @@ local function BuildGUI()
             end
         end)
 
-        -- Dịch chuyển Slider xuống dưới nút Auto E một chút
+        -- [THÊM MỚI] Giao diện cho nút SERVER VIP (Hop Server) nằm ở vị trí Y: 240
+        HopVipButton = Instance.new("TextButton")
+        HopVipButton.Name = "HopVipButton"
+        HopVipButton.Parent = MainFrame
+        HopVipButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        HopVipButton.BackgroundTransparency = 0.2
+        HopVipButton.Position = UDim2.new(0, 10, 0, 240)
+        HopVipButton.Size = UDim2.new(0, 140, 0, 30)
+        HopVipButton.Font = Enum.Font.SourceSansBold
+        HopVipButton.Text = "SERVER VIP (1 MÌNH)"
+        HopVipButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        HopVipButton.TextSize = 12
+
+        local UICornerHopVip = Instance.new("UICorner")
+        UICornerHopVip.CornerRadius = UDim.new(0, 6)
+        UICornerHopVip.Parent = HopVipButton
+
+        UIStroke7 = Instance.new("UIStroke")
+        UIStroke7.Thickness = 2
+        UIStroke7.Parent = HopVipButton
+
+        HopVipButton.MouseButton1Click:Connect(function()
+            HopVipButton.Text = "HOPPING..."
+            HopToVipServer()
+        end)
+
+        -- [DỊCH CHUYỂN] Đẩy Slider xuống dưới nút Server VIP mới (Y tăng thêm 35 đơn vị)
         SliderLabel = Instance.new("TextLabel")  
         SliderLabel.Name = "SliderLabel"  
         SliderLabel.Parent = MainFrame  
         SliderLabel.BackgroundTransparency = 1  
-        SliderLabel.Position = UDim2.new(0, 10, 0, 245)  
+        SliderLabel.Position = UDim2.new(0, 10, 0, 280)  
         SliderLabel.Size = UDim2.new(0, 140, 0, 20)  
         SliderLabel.Font = Enum.Font.SourceSansBold  
         SliderLabel.Text = "SPEED: " .. math.floor(_G.WalkSpeedValue)  
@@ -251,7 +317,7 @@ local function BuildGUI()
         SliderFrame.Parent = MainFrame  
         SliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)  
         SliderFrame.BackgroundTransparency = 0.3
-        SliderFrame.Position = UDim2.new(0, 15, 0, 275)  
+        SliderFrame.Position = UDim2.new(0, 15, 0, 310)  
         SliderFrame.Size = UDim2.new(0, 130, 0, 8)  
 
         local SliderCorner = Instance.new("UICorner")  
@@ -266,7 +332,6 @@ local function BuildGUI()
         SliderButton.Name = "SliderButton"  
         SliderButton.Parent = SliderFrame  
         SliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)  
-        -- [CẬP NHẬT] Tính toán phần trăm dựa trên giới hạn mới là 200
         local initialPercent = (_G.WalkSpeedValue - 16) / (200 - 16)  
         SliderButton.Position = UDim2.new(math.clamp(initialPercent, 0, 1), -6, 0.5, -6)  
         SliderButton.Size = UDim2.new(0, 12, 0, 12)  
@@ -291,7 +356,6 @@ local function BuildGUI()
                 local percent = math.clamp(relativeX / SliderFrame.AbsoluteSize.X, 0, 1)  
                 SliderButton.Position = UDim2.new(percent, -6, 0.5, -6)  
                   
-                -- [CẬP NHẬT] Đổi công thức tính từ 100 thành tối đa 200 speed
                 _G.WalkSpeedValue = 16 + (percent * (200 - 16))  
                 SliderLabel.Text = "SPEED: " .. math.floor(_G.WalkSpeedValue)  
             end  
@@ -336,22 +400,19 @@ task.spawn(function()
     end
 end)
 
--- [THÊM MỚI] Vòng lặp tối ưu chạy song song xử lý giật Auto Click E cực nhanh
 task.spawn(function()
     while true do
-        task.wait(0.01) -- Chạy với tốc độ tối đa của game (nhanh hơn auto click thường rất nhiều)
+        task.wait(0.01) 
         if _G.AutoClickE then
             local player = game.Players.LocalPlayer
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 local myPos = player.Character.HumanoidRootPart.Position
                 for _, prompt in pairs(workspace:GetDescendants()) do
                     if prompt:IsA("ProximityPrompt") and prompt.Enabled then
-                        -- Kiểm tra khoảng cách để không bị kích hoạt lỗi từ xa
                         local parent = prompt.Parent
                         if parent and parent:IsA("BasePart") then
                             local dist = (myPos - parent.Position).Magnitude
                             if dist <= prompt.MaxActivationDistance then
-                                -- Kích hoạt trực tiếp sự kiện nhấn E của prompt đó
                                 fireproximityprompt(prompt)
                             end
                         end
@@ -433,7 +494,8 @@ coroutine.wrap(function()
         if UIStroke3 then UIStroke3.Color = rainbowColor end 
         if UIStroke4 then UIStroke4.Color = rainbowColor end 
         if UIStroke5 then UIStroke5.Color = rainbowColor end 
-        if UIStroke6 then UIStroke6.Color = rainbowColor end -- Đồng bộ màu cầu vồng cho nút Auto E mới
+        if UIStroke6 then UIStroke6.Color = rainbowColor end 
+        if UIStroke7 then UIStroke7.Color = rainbowColor end -- [THÊM MỚI] Đồng bộ màu cầu vồng cho nút Server VIP
         if SliderStroke then SliderStroke.Color = rainbowColor end  
         if SliderLabel then SliderLabel.TextColor3 = rainbowColor end  
         if TitleLabel then TitleLabel.TextColor3 = rainbowColor end   
