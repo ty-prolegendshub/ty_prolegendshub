@@ -7,6 +7,7 @@ local MainFrame, ResetButton, SkipEButton, UIStroke1, UIStroke2, FrameStroke
 local SliderFrame, SliderButton, SliderLabel, SliderStroke
 local TitleLabel, NoclipButton, UIStroke3, InfJumpButton, UIStroke4
 local ChatTpButton, UIStroke5
+local AutoEButton, UIStroke6 -- Thêm biến cho nút Auto E mới
 
 local _G = _G or {}
 _G.InstantSkipE = _G.InstantSkipE or false
@@ -14,6 +15,7 @@ _G.WalkSpeedValue = _G.WalkSpeedValue or 16
 _G.Noclip = _G.Noclip or false
 _G.InfJump = _G.InfJump or false
 _G.ChatTP = _G.ChatTP or false
+_G.AutoClickE = _G.AutoClickE or false -- Thêm biến trạng thái Auto Click E
 
 local function BuildGUI()
     if not TY_PROLEGENDS:FindFirstChild("MainFrame") then
@@ -25,7 +27,8 @@ local function BuildGUI()
         MainFrame.ScaleType = Enum.ScaleType.Stretch
         MainFrame.ImageTransparency = 0 
         MainFrame.Position = UDim2.new(0.1, 0, 0.4, 0)
-        MainFrame.Size = UDim2.new(0, 160, 0, 300)
+        -- Tăng nhẹ chiều cao Frame từ 300 lên 335 để vừa khít nút Auto E mới
+        MainFrame.Size = UDim2.new(0, 160, 0, 335)
         MainFrame.Active = true
         MainFrame.Draggable = true
 
@@ -199,11 +202,44 @@ local function BuildGUI()
             end
         end)
 
+        -- [THÊM MỚI] Nút chức năng Auto Click E
+        AutoEButton = Instance.new("TextButton")
+        AutoEButton.Name = "AutoEButton"
+        AutoEButton.Parent = MainFrame
+        AutoEButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        AutoEButton.BackgroundTransparency = 0.2
+        AutoEButton.Position = UDim2.new(0, 10, 0, 205)
+        AutoEButton.Size = UDim2.new(0, 140, 0, 30)
+        AutoEButton.Font = Enum.Font.SourceSansBold
+        AutoEButton.Text = _G.AutoClickE and "AUTO CLICK E: ON" or "AUTO CLICK E: OFF"
+        AutoEButton.TextColor3 = _G.AutoClickE and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        AutoEButton.TextSize = 13
+
+        local UICornerAutoE = Instance.new("UICorner")
+        UICornerAutoE.CornerRadius = UDim.new(0, 6)
+        UICornerAutoE.Parent = AutoEButton
+
+        UIStroke6 = Instance.new("UIStroke")
+        UIStroke6.Thickness = 2
+        UIStroke6.Parent = AutoEButton
+
+        AutoEButton.MouseButton1Click:Connect(function()
+            _G.AutoClickE = not _G.AutoClickE
+            if _G.AutoClickE then
+                AutoEButton.Text = "AUTO CLICK E: ON"
+                AutoEButton.TextColor3 = Color3.fromRGB(0, 255, 0)
+            else
+                AutoEButton.Text = "AUTO CLICK E: OFF"
+                AutoEButton.TextColor3 = Color3.fromRGB(255, 0, 0)
+            end
+        end)
+
+        -- Dịch chuyển Slider xuống dưới nút Auto E một chút
         SliderLabel = Instance.new("TextLabel")  
         SliderLabel.Name = "SliderLabel"  
         SliderLabel.Parent = MainFrame  
         SliderLabel.BackgroundTransparency = 1  
-        SliderLabel.Position = UDim2.new(0, 10, 0, 210)  
+        SliderLabel.Position = UDim2.new(0, 10, 0, 245)  
         SliderLabel.Size = UDim2.new(0, 140, 0, 20)  
         SliderLabel.Font = Enum.Font.SourceSansBold  
         SliderLabel.Text = "SPEED: " .. math.floor(_G.WalkSpeedValue)  
@@ -215,7 +251,7 @@ local function BuildGUI()
         SliderFrame.Parent = MainFrame  
         SliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)  
         SliderFrame.BackgroundTransparency = 0.3
-        SliderFrame.Position = UDim2.new(0, 15, 0, 240)  
+        SliderFrame.Position = UDim2.new(0, 15, 0, 275)  
         SliderFrame.Size = UDim2.new(0, 130, 0, 8)  
 
         local SliderCorner = Instance.new("UICorner")  
@@ -230,7 +266,8 @@ local function BuildGUI()
         SliderButton.Name = "SliderButton"  
         SliderButton.Parent = SliderFrame  
         SliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)  
-        local initialPercent = (_G.WalkSpeedValue - 16) / (100 - 16)  
+        -- [CẬP NHẬT] Tính toán phần trăm dựa trên giới hạn mới là 200
+        local initialPercent = (_G.WalkSpeedValue - 16) / (200 - 16)  
         SliderButton.Position = UDim2.new(math.clamp(initialPercent, 0, 1), -6, 0.5, -6)  
         SliderButton.Size = UDim2.new(0, 12, 0, 12)  
         SliderButton.Text = ""  
@@ -254,7 +291,8 @@ local function BuildGUI()
                 local percent = math.clamp(relativeX / SliderFrame.AbsoluteSize.X, 0, 1)  
                 SliderButton.Position = UDim2.new(percent, -6, 0.5, -6)  
                   
-                _G.WalkSpeedValue = 16 + (percent * (100 - 16))  
+                -- [CẬP NHẬT] Đổi công thức tính từ 100 thành tối đa 200 speed
+                _G.WalkSpeedValue = 16 + (percent * (200 - 16))  
                 SliderLabel.Text = "SPEED: " .. math.floor(_G.WalkSpeedValue)  
             end  
         end)  
@@ -292,6 +330,32 @@ task.spawn(function()
             for _, v in pairs(player.Character:GetDescendants()) do
                 if v:IsA("BasePart") and v.CanCollide then
                     v.CanCollide = false
+                end
+            end
+        end
+    end
+end)
+
+-- [THÊM MỚI] Vòng lặp tối ưu chạy song song xử lý giật Auto Click E cực nhanh
+task.spawn(function()
+    while true do
+        task.wait(0.01) -- Chạy với tốc độ tối đa của game (nhanh hơn auto click thường rất nhiều)
+        if _G.AutoClickE then
+            local player = game.Players.LocalPlayer
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local myPos = player.Character.HumanoidRootPart.Position
+                for _, prompt in pairs(workspace:GetDescendants()) do
+                    if prompt:IsA("ProximityPrompt") and prompt.Enabled then
+                        -- Kiểm tra khoảng cách để không bị kích hoạt lỗi từ xa
+                        local parent = prompt.Parent
+                        if parent and parent:IsA("BasePart") then
+                            local dist = (myPos - parent.Position).Magnitude
+                            if dist <= prompt.MaxActivationDistance then
+                                -- Kích hoạt trực tiếp sự kiện nhấn E của prompt đó
+                                fireproximityprompt(prompt)
+                            end
+                        end
+                    end
                 end
             end
         end
@@ -369,6 +433,7 @@ coroutine.wrap(function()
         if UIStroke3 then UIStroke3.Color = rainbowColor end 
         if UIStroke4 then UIStroke4.Color = rainbowColor end 
         if UIStroke5 then UIStroke5.Color = rainbowColor end 
+        if UIStroke6 then UIStroke6.Color = rainbowColor end -- Đồng bộ màu cầu vồng cho nút Auto E mới
         if SliderStroke then SliderStroke.Color = rainbowColor end  
         if SliderLabel then SliderLabel.TextColor3 = rainbowColor end  
         if TitleLabel then TitleLabel.TextColor3 = rainbowColor end   
