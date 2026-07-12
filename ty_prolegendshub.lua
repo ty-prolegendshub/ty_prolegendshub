@@ -1,504 +1,172 @@
-local TY_PROLEGENDS = Instance.new("ScreenGui")
-TY_PROLEGENDS.Name = "TY_PROLEGENDS_HUB"
-TY_PROLEGENDS.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-TY_PROLEGENDS.ResetOnSpawn = false
-
-local MainFrame, ResetButton, SkipEButton, UIStroke1, UIStroke2, FrameStroke
-local SliderFrame, SliderButton, SliderLabel, SliderStroke
-local TitleLabel, NoclipButton, UIStroke3, InfJumpButton, UIStroke4
-local ChatTpButton, UIStroke5
-local AutoEButton, UIStroke6 -- Thêm biến cho nút Auto E mới
-local HopVipButton, UIStroke7 -- [THÊM MỚI] Biến cho nút Server VIP
+local TY = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+TY.Name = "TY_PROLEGENDS_HUB" TY.ResetOnSpawn = false
 
 local _G = _G or {}
-_G.InstantSkipE = _G.InstantSkipE or false
-_G.WalkSpeedValue = _G.WalkSpeedValue or 16
-_G.Noclip = _G.Noclip or false
-_G.InfJump = _G.InfJump or false
-_G.ChatTP = _G.ChatTP or false
-_G.AutoClickE = _G.AutoClickE or false -- Thêm biến trạng thái Auto Click E
+local rainbowObjs, main = {}
 
--- [THÊM MỚI] Hàm xử lý nhảy sang Server trống (Server VIP)
-local function HopToVipServer()
-    local HttpService = game:GetService("HttpService")
-    local TeleportService = game:GetService("TeleportService")
-    local Players = game:GetService("Players")
-    local placeId = game.PlaceId
-    
-    local success, result = pcall(function()
-        -- Gửi request lấy danh sách các server công khai hiện tại
-        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"))
-    end)
-    
-    if success and result and result.data then
-        local targetServerToken = nil
-        -- Duyệt qua danh sách để tìm server không có ai hoặc ít người nhất có thể
-        for _, server in pairs(result.data) do
-            if server.playing == 0 and server.id ~= game.JobId then
-                targetServerToken = server.id
-                break
-            end
-        end
-        
-        -- Nếu tìm thấy server trống, thực hiện dịch chuyển
-        if targetServerToken then
-            TeleportService:TeleportToPlaceInstance(placeId, targetServerToken, Players.LocalPlayer)
-        else
-            -- Nếu không tìm thấy server 0 người, tìm server có số lượng người ít nhất
-            for _, server in pairs(result.data) do
-                if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                    targetServerToken = server.id
-                    break
-                end
-            end
-            if targetServerToken then
-                TeleportService:TeleportToPlaceInstance(placeId, targetServerToken, Players.LocalPlayer)
-            end
-        end
-    end
+local function createBtn(txt, pos, color, fn)
+    local b = Instance.new("TextButton", main)
+    b.Size, b.Position, b.BackgroundColor3, b.BackgroundTransparency = UDim2.new(0, 140, 0, 30), pos, Color3.fromRGB(25,25,25), 0.2
+    b.Font, b.Text, b.TextColor3, b.TextSize = Enum.Font.SourceSansBold, txt, color, 13
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    local s = Instance.new("UIStroke", b) s.Thickness = 2 table.insert(rainbowObjs, s)
+    b.MouseButton1Click:Connect(function() fn(b) end)
+    return b
 end
 
-local function BuildGUI()
-    if not TY_PROLEGENDS:FindFirstChild("MainFrame") then
-        MainFrame = Instance.new("ImageLabel")
-        MainFrame.Name = "MainFrame"
-        MainFrame.Parent = TY_PROLEGENDS
-        MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        MainFrame.Image = "rbxassetid://72301572453207"
-        MainFrame.ScaleType = Enum.ScaleType.Stretch
-        MainFrame.ImageTransparency = 0 
-        MainFrame.Position = UDim2.new(0.1, 0, 0.4, 0)
-        -- [CẬP NHẬT] Tăng chiều cao từ 335 lên 370 để chứa thêm nút Server VIP mới
-        MainFrame.Size = UDim2.new(0, 160, 0, 370)
-        MainFrame.Active = true
-        MainFrame.Draggable = true
-
-        local FrameCorner = Instance.new("UICorner")  
-        FrameCorner.CornerRadius = UDim.new(0, 10)  
-        FrameCorner.Parent = MainFrame  
-
-        FrameStroke = Instance.new("UIStroke")  
-        FrameStroke.Thickness = 3  
-        FrameStroke.Parent = MainFrame  
-
-        TitleLabel = Instance.new("TextLabel")
-        TitleLabel.Name = "TitleLabel"
-        TitleLabel.Parent = MainFrame
-        TitleLabel.BackgroundTransparency = 1
-        TitleLabel.Position = UDim2.new(0, 10, 0, 5)
-        TitleLabel.Size = UDim2.new(0, 140, 0, 20)
-        TitleLabel.Font = Enum.Font.SourceSansBold
-        TitleLabel.Text = "TY_PROLEGENDS HUB"
-        TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TitleLabel.TextSize = 14
-
-        ResetButton = Instance.new("TextButton")  
-        ResetButton.Name = "ResetButton"  
-        ResetButton.Parent = MainFrame  
-        ResetButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)  
-        ResetButton.BackgroundTransparency = 0.2
-        ResetButton.Position = UDim2.new(0, 10, 0, 30)  
-        ResetButton.Size = UDim2.new(0, 140, 0, 30) 
-        ResetButton.Font = Enum.Font.SourceSansBold  
-        ResetButton.Text = "RESET CHARACTER"  
-        ResetButton.TextColor3 = Color3.fromRGB(255, 255, 255)  
-        ResetButton.TextSize = 13  
-
-        local UICorner1 = Instance.new("UICorner")  
-        UICorner1.CornerRadius = UDim.new(0, 6)  
-        UICorner1.Parent = ResetButton  
-
-        UIStroke1 = Instance.new("UIStroke")  
-        UIStroke1.Thickness = 2  
-        UIStroke1.Parent = ResetButton  
-
-        ResetButton.MouseButton1Click:Connect(function()  
-            local player = game.Players.LocalPlayer  
-            if player.Character and player.Character:FindFirstChild("Humanoid") then  
-                player.Character.Humanoid.Health = 0  
-            end  
-        end)  
-
-        SkipEButton = Instance.new("TextButton")  
-        SkipEButton.Name = "SkipEButton"  
-        SkipEButton.Parent = MainFrame  
-        SkipEButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)  
-        SkipEButton.BackgroundTransparency = 0.2
-        SkipEButton.Position = UDim2.new(0, 10, 0, 65)  
-        SkipEButton.Size = UDim2.new(0, 140, 0, 30)  
-        SkipEButton.Font = Enum.Font.SourceSansBold  
-        SkipEButton.Text = _G.InstantSkipE and "SKIP E: ON" or "SKIP E: OFF"  
-        SkipEButton.TextColor3 = _G.InstantSkipE and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)  
-        SkipEButton.TextSize = 13  
-
-        local UICorner2 = Instance.new("UICorner")  
-        UICorner2.CornerRadius = UDim.new(0, 6)  
-        UICorner2.Parent = SkipEButton  
-
-        UIStroke2 = Instance.new("UIStroke")  
-        UIStroke2.Thickness = 2  
-        UIStroke2.Parent = SkipEButton  
-
-        SkipEButton.MouseButton1Click:Connect(function()  
-            _G.InstantSkipE = not _G.InstantSkipE  
-            if _G.InstantSkipE then  
-                SkipEButton.Text = "SKIP E: ON"  
-                SkipEButton.TextColor3 = Color3.fromRGB(0, 255, 0)  
-            else  
-                SkipEButton.Text = "SKIP E: OFF"  
-                SkipEButton.TextColor3 = Color3.fromRGB(255, 0, 0)  
-            end  
-        end)  
-
-        NoclipButton = Instance.new("TextButton")
-        NoclipButton.Name = "NoclipButton"
-        NoclipButton.Parent = MainFrame
-        NoclipButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        NoclipButton.BackgroundTransparency = 0.2
-        NoclipButton.Position = UDim2.new(0, 10, 0, 100)
-        NoclipButton.Size = UDim2.new(0, 140, 0, 30)
-        NoclipButton.Font = Enum.Font.SourceSansBold
-        NoclipButton.Text = _G.Noclip and "NOCLIP: ON" or "NOCLIP: OFF"
-        NoclipButton.TextColor3 = _G.Noclip and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-        NoclipButton.TextSize = 13
-
-        local UICornerNoclip = Instance.new("UICorner")
-        UICornerNoclip.CornerRadius = UDim.new(0, 6)
-        UICornerNoclip.Parent = NoclipButton
-
-        UIStroke3 = Instance.new("UIStroke")
-        UIStroke3.Thickness = 2
-        UIStroke3.Parent = NoclipButton
-
-        NoclipButton.MouseButton1Click:Connect(function()
-            _G.Noclip = not _G.Noclip
-            if _G.Noclip then
-                NoclipButton.Text = "NOCLIP: ON"
-                NoclipButton.TextColor3 = Color3.fromRGB(0, 255, 0)
-            else
-                NoclipButton.Text = "NOCLIP: OFF"
-                NoclipButton.TextColor3 = Color3.fromRGB(255, 0, 0)
-            end
-        end)
-
-        InfJumpButton = Instance.new("TextButton")
-        InfJumpButton.Name = "InfJumpButton"
-        InfJumpButton.Parent = MainFrame
-        InfJumpButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        InfJumpButton.BackgroundTransparency = 0.2
-        InfJumpButton.Position = UDim2.new(0, 10, 0, 135)
-        InfJumpButton.Size = UDim2.new(0, 140, 0, 30)
-        InfJumpButton.Font = Enum.Font.SourceSansBold
-        InfJumpButton.Text = _G.InfJump and "INF JUMP: ON" or "INF JUMP: OFF"
-        InfJumpButton.TextColor3 = _G.InfJump and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-        InfJumpButton.TextSize = 13
-
-        local UICornerInf = Instance.new("UICorner")
-        UICornerInf.CornerRadius = UDim.new(0, 6)
-        UICornerInf.Parent = InfJumpButton
-
-        UIStroke4 = Instance.new("UIStroke")
-        UIStroke4.Thickness = 2
-        UIStroke4.Parent = InfJumpButton
-
-        InfJumpButton.MouseButton1Click:Connect(function()
-            _G.InfJump = not _G.InfJump
-            if _G.InfJump then
-                InfJumpButton.Text = "INF JUMP: ON"
-                InfJumpButton.TextColor3 = Color3.fromRGB(0, 255, 0)
-            else
-                InfJumpButton.Text = "INF JUMP: OFF"
-                InfJumpButton.TextColor3 = Color3.fromRGB(255, 0, 0)
-            end
-        end)
-
-        ChatTpButton = Instance.new("TextButton")
-        ChatTpButton.Name = "ChatTpButton"
-        ChatTpButton.Parent = MainFrame
-        ChatTpButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        ChatTpButton.BackgroundTransparency = 0.2
-        ChatTpButton.Position = UDim2.new(0, 10, 0, 170)
-        ChatTpButton.Size = UDim2.new(0, 140, 0, 30)
-        ChatTpButton.Font = Enum.Font.SourceSansBold
-        ChatTpButton.Text = _G.ChatTP and "CHAT TP: ON" or "CHAT TP: OFF"
-        ChatTpButton.TextColor3 = _G.ChatTP and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-        ChatTpButton.TextSize = 13
-
-        local UICornerChat = Instance.new("UICorner")
-        UICornerChat.CornerRadius = UDim.new(0, 6)
-        UICornerChat.Parent = ChatTpButton
-
-        UIStroke5 = Instance.new("UIStroke")
-        UIStroke5.Thickness = 2
-        UIStroke5.Parent = ChatTpButton
-
-        ChatTpButton.MouseButton1Click:Connect(function()
-            _G.ChatTP = not _G.ChatTP
-            if _G.ChatTP then
-                ChatTpButton.Text = "CHAT TP: ON"
-                ChatTpButton.TextColor3 = Color3.fromRGB(0, 255, 0)
-            else
-                ChatTpButton.Text = "CHAT TP: OFF"
-                ChatTpButton.TextColor3 = Color3.fromRGB(255, 0, 0)
-            end
-        end)
-
-        AutoEButton = Instance.new("TextButton")
-        AutoEButton.Name = "AutoEButton"
-        AutoEButton.Parent = MainFrame
-        AutoEButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        AutoEButton.BackgroundTransparency = 0.2
-        AutoEButton.Position = UDim2.new(0, 10, 0, 205)
-        AutoEButton.Size = UDim2.new(0, 140, 0, 30)
-        AutoEButton.Font = Enum.Font.SourceSansBold
-        AutoEButton.Text = _G.AutoClickE and "AUTO CLICK E: ON" or "AUTO CLICK E: OFF"
-        AutoEButton.TextColor3 = _G.AutoClickE and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-        AutoEButton.TextSize = 13
-
-        local UICornerAutoE = Instance.new("UICorner")
-        UICornerAutoE.CornerRadius = UDim.new(0, 6)
-        UICornerAutoE.Parent = AutoEButton
-
-        UIStroke6 = Instance.new("UIStroke")
-        UIStroke6.Thickness = 2
-        UIStroke6.Parent = AutoEButton
-
-        AutoEButton.MouseButton1Click:Connect(function()
-            _G.AutoClickE = not _G.AutoClickE
-            if _G.AutoClickE then
-                AutoEButton.Text = "AUTO CLICK E: ON"
-                AutoEButton.TextColor3 = Color3.fromRGB(0, 255, 0)
-            else
-                AutoEButton.Text = "AUTO CLICK E: OFF"
-                AutoEButton.TextColor3 = Color3.fromRGB(255, 0, 0)
-            end
-        end)
-
-        -- [THÊM MỚI] Giao diện cho nút SERVER VIP (Hop Server) nằm ở vị trí Y: 240
-        HopVipButton = Instance.new("TextButton")
-        HopVipButton.Name = "HopVipButton"
-        HopVipButton.Parent = MainFrame
-        HopVipButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        HopVipButton.BackgroundTransparency = 0.2
-        HopVipButton.Position = UDim2.new(0, 10, 0, 240)
-        HopVipButton.Size = UDim2.new(0, 140, 0, 30)
-        HopVipButton.Font = Enum.Font.SourceSansBold
-        HopVipButton.Text = "SERVER VIP (1 MÌNH)"
-        HopVipButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        HopVipButton.TextSize = 12
-
-        local UICornerHopVip = Instance.new("UICorner")
-        UICornerHopVip.CornerRadius = UDim.new(0, 6)
-        UICornerHopVip.Parent = HopVipButton
-
-        UIStroke7 = Instance.new("UIStroke")
-        UIStroke7.Thickness = 2
-        UIStroke7.Parent = HopVipButton
-
-        HopVipButton.MouseButton1Click:Connect(function()
-            HopVipButton.Text = "HOPPING..."
-            HopToVipServer()
-        end)
-
-        -- [DỊCH CHUYỂN] Đẩy Slider xuống dưới nút Server VIP mới (Y tăng thêm 35 đơn vị)
-        SliderLabel = Instance.new("TextLabel")  
-        SliderLabel.Name = "SliderLabel"  
-        SliderLabel.Parent = MainFrame  
-        SliderLabel.BackgroundTransparency = 1  
-        SliderLabel.Position = UDim2.new(0, 10, 0, 280)  
-        SliderLabel.Size = UDim2.new(0, 140, 0, 20)  
-        SliderLabel.Font = Enum.Font.SourceSansBold  
-        SliderLabel.Text = "SPEED: " .. math.floor(_G.WalkSpeedValue)  
-        SliderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)  
-        SliderLabel.TextSize = 13  
-
-        SliderFrame = Instance.new("Frame")  
-        SliderFrame.Name = "SliderFrame"  
-        SliderFrame.Parent = MainFrame  
-        SliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)  
-        SliderFrame.BackgroundTransparency = 0.3
-        SliderFrame.Position = UDim2.new(0, 15, 0, 310)  
-        SliderFrame.Size = UDim2.new(0, 130, 0, 8)  
-
-        local SliderCorner = Instance.new("UICorner")  
-        SliderCorner.CornerRadius = UDim.new(0, 4)  
-        SliderCorner.Parent = SliderFrame  
-
-        SliderStroke = Instance.new("UIStroke")  
-        SliderStroke.Thickness = 1.5  
-        SliderStroke.Parent = SliderFrame  
-
-        SliderButton = Instance.new("TextButton")  
-        SliderButton.Name = "SliderButton"  
-        SliderButton.Parent = SliderFrame  
-        SliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)  
-        local initialPercent = (_G.WalkSpeedValue - 16) / (200 - 16)  
-        SliderButton.Position = UDim2.new(math.clamp(initialPercent, 0, 1), -6, 0.5, -6)  
-        SliderButton.Size = UDim2.new(0, 12, 0, 12)  
-        SliderButton.Text = ""  
-
-        local ButtonCorner = Instance.new("UICorner")  
-        ButtonCorner.CornerRadius = UDim.new(1, 0)  
-        ButtonCorner.Parent = SliderButton  
-
-        local UserInputService = game:GetService("UserInputService")  
-        local dragging = false  
-
-        SliderButton.InputBegan:Connect(function(input)  
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
-                dragging = true  
-            end  
-        end)  
-
-        UserInputService.InputChanged:Connect(function(input)  
-            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then  
-                local relativeX = input.Position.X - SliderFrame.AbsolutePosition.X  
-                local percent = math.clamp(relativeX / SliderFrame.AbsoluteSize.X, 0, 1)  
-                SliderButton.Position = UDim2.new(percent, -6, 0.5, -6)  
-                  
-                _G.WalkSpeedValue = 16 + (percent * (200 - 16))  
-                SliderLabel.Text = "SPEED: " .. math.floor(_G.WalkSpeedValue)  
-            end  
-        end)  
-
-        UserInputService.InputEnded:Connect(function(input)  
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
-                dragging = false  
-            end  
-        end)  
-    end
-end
-
-BuildGUI()
-
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        local player = game.Players.LocalPlayer
+local function HopToVipServer(btn)
+    btn.Text = "HOPPING..."
+    task.spawn(function()
+        local Http = game:GetService("HttpService")
+        local Teleport = game:GetService("TeleportService")
+        local placeId = game.PlaceId
+        local cursor = ""
         
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.WalkSpeed = _G.WalkSpeedValue
-        end
-
-        if _G.InstantSkipE then  
-            for _, prompt in pairs(workspace:GetDescendants()) do  
-                if prompt:IsA("ProximityPrompt") then  
-                    if prompt.HoldDuration > 0 then  
-                        prompt.HoldDuration = 0  
-                    end  
-                end  
-            end  
-        end
-
-        if _G.Noclip and player.Character then
-            for _, v in pairs(player.Character:GetDescendants()) do
-                if v:IsA("BasePart") and v.CanCollide then
-                    v.CanCollide = false
-                end
-            end
-        end
-    end
-end)
-
-task.spawn(function()
-    while true do
-        task.wait(0.01) 
-        if _G.AutoClickE then
-            local player = game.Players.LocalPlayer
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local myPos = player.Character.HumanoidRootPart.Position
-                for _, prompt in pairs(workspace:GetDescendants()) do
-                    if prompt:IsA("ProximityPrompt") and prompt.Enabled then
-                        local parent = prompt.Parent
-                        if parent and parent:IsA("BasePart") then
-                            local dist = (myPos - parent.Position).Magnitude
-                            if dist <= prompt.MaxActivationDistance then
-                                fireproximityprompt(prompt)
-                            end
-                        end
+        for i = 1, 5 do
+            local url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100" .. (cursor ~= "" and "&cursor=" .. cursor or "")
+            local success, result = pcall(function() return Http:JSONDecode(game:HttpGet(url)) end)
+            
+            if success and result and result.data then
+                for _, s in ipairs(result.data) do
+                    if s.id ~= game.JobId and s.playing < s.maxPlayers then
+                        Teleport:TeleportToPlaceInstance(placeId, s.id, game.Players.LocalPlayer)
+                        return
                     end
                 end
+                if result.nextPageCursor then cursor = result.nextPageCursor else break end
             end
+            task.wait(0.2)
+        end
+        btn.Text = "KHÔNG TÌM THẤY!"
+        task.wait(1.5)
+        btn.Text = "SERVER VIP (1 MÌNH)"
+    end)
+end
+
+if not TY:FindFirstChild("MainFrame") then
+    main = Instance.new("ImageLabel", TY)
+    main.Name, main.Size, main.Position = "MainFrame", UDim2.new(0, 160, 0, 405), UDim2.new(0.1, 0, 0.4, 0)
+    main.BackgroundColor3, main.Image, main.Active, main.Draggable = Color3.fromRGB(0,0,0), "rbxassetid://72301572453207", true, true
+    Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
+    table.insert(rainbowObjs, Instance.new("UIStroke", main))
+
+    local title = Instance.new("TextLabel", main)
+    title.Size, title.Position, title.BackgroundTransparency, title.Text, title.Font, title.TextSize = UDim2.new(0, 140, 0, 20), UDim2.new(0, 10, 0, 5), 1, "TY_PROLEGENDS HUB", Enum.Font.SourceSansBold, 14
+    table.insert(rainbowObjs, title)
+
+    createBtn("RESET CHARACTER", UDim2.new(0,10,0,30), Color3.fromRGB(255,255,255), function() local h = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") if h then h.Health = 0 end end)
+    
+    local toggles = {
+        {"SkipEButton", "SKIP E", 65, "InstantSkipE"},
+        {"NoclipButton", "NOCLIP", 100, "Noclip"},
+        {"InfJumpButton", "INF JUMP", 135, "InfJump"},
+        {"ChatTpButton", "CHAT TP", 170, "ChatTP"},
+        {"AutoEButton", "AUTO CLICK E", 205, "AutoClickE"},
+        {"EspButton", "ESP", 240, "ESP"}
+    }
+
+    for _, v in ipairs(toggles) do
+        _G[v[4]] = _G[v[4]] or false
+        createBtn(v[2] .. ": " .. (_G[v[4]] and "ON" or "OFF"), UDim2.new(0, 10, 0, v[3]), _G[v[4]] and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0), function(btn)
+            _G[v[4]] = not _G[v[4]]
+            btn.Text = v[2] .. ": " .. (_G[v[4]] and "ON" or "OFF")
+            btn.TextColor3 = _G[v[4]] and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+        end)
+    end
+
+    createBtn("SERVER VIP (1 MÌNH)", UDim2.new(0, 10, 0, 275), Color3.fromRGB(255,255,255), HopToVipServer).TextSize = 12
+
+    local sl = Instance.new("TextLabel", main)
+    sl.Size, sl.Position, sl.BackgroundTransparency, sl.Text, sl.Font, sl.TextSize = UDim2.new(0, 140, 0, 20), UDim2.new(0, 10, 0, 315), 1, "SPEED: " .. math.floor(_G.WalkSpeedValue or 16), Enum.Font.SourceSansBold, 13
+    table.insert(rainbowObjs, sl)
+
+    local sf = Instance.new("Frame", main)
+    sf.Size, sf.Position, sf.BackgroundColor3, sf.BackgroundTransparency = UDim2.new(0, 130, 0, 8), UDim2.new(0, 15, 0, 345), Color3.fromRGB(40,40,40), 0.3
+    Instance.new("UICorner", sf).CornerRadius = UDim.new(0, 4)
+    table.insert(rainbowObjs, Instance.new("UIStroke", sf))
+
+    local sb = Instance.new("TextButton", sf)
+    sb.Size, sb.Position, sb.BackgroundColor3, sb.Text = UDim2.new(0, 12, 0, 12), UDim2.new(math.clamp(((_G.WalkSpeedValue or 16) - 16)/184, 0, 1), -6, 0.5, -6), Color3.fromRGB(255,255,255), ""
+    Instance.new("UICorner", sb).CornerRadius = UDim.new(1, 0)
+
+    local drag = false
+    sb.InputBegan:Connect(function(i) if i.UserInputType.Name:find("Mouse") or i.UserInputType.Name:find("Touch") then drag = true end end)
+    game:GetService("UserInputService").InputEnded:Connect(function(i) if i.UserInputType.Name:find("Mouse") or i.UserInputType.Name:find("Touch") then drag = false end end)
+    game:GetService("UserInputService").InputChanged:Connect(function(i)
+        if drag and (i.UserInputType.Name:find("Mouse") or i.UserInputType.Name:find("Touch")) then
+            local p = math.clamp((i.Position.X - sf.AbsolutePosition.X) / sf.AbsoluteSize.X, 0, 1)
+            sb.Position = UDim2.new(p, -6, 0.5, -6)
+            _G.WalkSpeedValue = 16 + (p * 184) sl.Text = "SPEED: " .. math.floor(_G.WalkSpeedValue)
+        end
+    end)
+end
+
+-- Vòng lặp chính xử lý tính năng (Speed, Skip E, Noclip, Auto E, ESP)
+task.spawn(function()
+    while task.wait(0.05) do
+        local lp = game.Players.LocalPlayer
+        if lp.Character then
+            if lp.Character:FindFirstChild("Humanoid") then lp.Character.Humanoid.WalkSpeed = _G.WalkSpeedValue or 16 end
+            if _G.Noclip then for _, v in pairs(lp.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end end
+        end
+        if _G.InstantSkipE then for _, v in pairs(workspace:GetDescendants()) do if v:IsA("ProximityPrompt") and v.HoldDuration > 0 then v.HoldDuration = 0 end end end
+        if _G.AutoClickE and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("ProximityPrompt") and v.Enabled and v.Parent:IsA("BasePart") and (lp.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude <= v.MaxActivationDistance then
+                    fireproximityprompt(v)
+                end
+            end
+        end
+        if _G.ESP then
+            for _, p in pairs(game.Players:GetPlayers()) do
+                if p ~= lp and p.Character and p.Character:FindFirstChild("Head") then
+                    local h = p.Character.Head local e = h:FindFirstChild("TY_ESP") or Instance.new("BillboardGui", h)
+                    if e.Name ~= "TY_ESP" then
+                        e.Name, e.Size, e.StudsOffset, e.AlwaysOnTop = "TY_ESP", UDim2.new(0, 100, 0, 40), Vector3.new(0, 2, 0), true
+                        local l = Instance.new("TextLabel", e) l.Name, l.Size, l.BackgroundTransparency, l.Font, l.TextSize = "EspLabel", UDim2.new(1,0,1,0), 1, Enum.Font.SourceSansBold, 14
+                    end
+                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                    if hum then e.EspLabel.Text = p.Name .. "\nHP: " .. math.floor(hum.Health) end
+                end
+            end
+        else
+            for _, p in pairs(game.Players:GetPlayers()) do pcall(function() p.Character.Head.TY_ESP:Destroy() end) end
         end
     end
 end)
 
 game:GetService("UserInputService").JumpRequest:Connect(function()
-    if _G.InfJump then
-        local player = game.Players.LocalPlayer
-        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-            player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-        end
+    if _G.InfJump and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+        game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
     end
 end)
 
 game.Players.LocalPlayer.Chatted:Connect(function(msg)
-    if _G.ChatTP and string.sub(string.lower(msg), 1, 4) == "/tp " then
-        local targetName = string.sub(msg, 5)
-        local localPlayer = game.Players.LocalPlayer
-        
+    if _G.ChatTP and msg:sub(1,4):lower() == "/tp " then
+        local target = msg:sub(5):lower()
         for _, p in pairs(game.Players:GetPlayers()) do
-            if p ~= localPlayer and string.find(string.lower(p.Name), string.lower(targetName)) then
-                if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                        localPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
-                        break
-                    end
-                end
+            if p ~= game.Players.LocalPlayer and p.Name:lower():find(target) and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame break
             end
         end
     end
 end)
 
-local ImageButton = Instance.new("ImageButton")
-local UICorner = Instance.new("UICorner")
+local imgBtn = Instance.new("ImageButton", TY)
+imgBtn.Size, imgBtn.Position, imgBtn.BackgroundColor3, imgBtn.Image, imgBtn.Draggable = UDim2.new(0,40,0,40), UDim2.new(0.106,0,0.162,0), Color3.fromRGB(0,0,0), "http://www.roblox.com/asset/?id=88859690240621", true
+Instance.new("UICorner", imgBtn).CornerRadius = UDim.new(0, 6)
+table.insert(rainbowObjs, Instance.new("UIStroke", imgBtn))
+imgBtn.MouseButton1Click:Connect(function() main.Visible = not main.Visible end)
 
-ImageButton.Parent = TY_PROLEGENDS
-ImageButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-ImageButton.BorderSizePixel = 0
-ImageButton.Position = UDim2.new(0.10615778, 0, 0.16217947, 0)
-ImageButton.Size = UDim2.new(0, 40, 0, 40)
-ImageButton.Draggable = true
-ImageButton.Image = "http://www.roblox.com/asset/?id=88859690240621" 
-
-UICorner.CornerRadius = UDim.new(0, 6)
-UICorner.Parent = ImageButton
-
-local ImageButtonStroke = Instance.new("UIStroke")
-ImageButtonStroke.Thickness = 2
-ImageButtonStroke.Parent = ImageButton
-
-ImageButton.MouseButton1Click:Connect(function()
-    if MainFrame then
-        MainFrame.Visible = not MainFrame.Visible
+local count = 0
+task.spawn(function()
+    while task.wait(0.02) do
+        count = count + 1 local col = Color3.fromHSV((count % 120) / 120, 1, 1)
+        for _, obj in pairs(rainbowObjs) do
+            if obj:IsA("UIStroke") then obj.Color = col elseif obj:IsA("TextLabel") then obj.TextColor3 = col end
+        end
+        if _G.ESP then
+            for _, p in pairs(game.Players:GetPlayers()) do pcall(function() p.Character.Head.TY_ESP.EspLabel.TextColor3 = col end) end
+        end
     end
 end)
-
-local runCount = 0
-coroutine.wrap(function()
-    while true do
-        task.wait(0.02)
-
-        if not game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("TY_PROLEGENDS_HUB") then  
-            TY_PROLEGENDS.Parent = game.Players.LocalPlayer.PlayerGui  
-        end  
-        BuildGUI()  
-          
-        runCount = runCount + 1  
-        local hue = (runCount % 120) / 120  
-        local rainbowColor = Color3.fromHSV(hue, 1, 1)  
-          
-        if FrameStroke then FrameStroke.Color = rainbowColor end  
-        if UIStroke1 then UIStroke1.Color = rainbowColor end  
-        if UIStroke2 then UIStroke2.Color = rainbowColor end  
-        if UIStroke3 then UIStroke3.Color = rainbowColor end 
-        if UIStroke4 then UIStroke4.Color = rainbowColor end 
-        if UIStroke5 then UIStroke5.Color = rainbowColor end 
-        if UIStroke6 then UIStroke6.Color = rainbowColor end 
-        if UIStroke7 then UIStroke7.Color = rainbowColor end -- [THÊM MỚI] Đồng bộ màu cầu vồng cho nút Server VIP
-        if SliderStroke then SliderStroke.Color = rainbowColor end  
-        if SliderLabel then SliderLabel.TextColor3 = rainbowColor end  
-        if TitleLabel then TitleLabel.TextColor3 = rainbowColor end   
-        if ImageButtonStroke then ImageButtonStroke.Color = rainbowColor end 
-    end
-end)()
