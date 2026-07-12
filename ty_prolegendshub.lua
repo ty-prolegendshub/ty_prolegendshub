@@ -21,25 +21,20 @@ local function HopToVipServer(btn)
         local Teleport = game:GetService("TeleportService")
         local placeId = game.PlaceId
         local cursor = ""
-        
         for i = 1, 5 do
             local url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100" .. (cursor ~= "" and "&cursor=" .. cursor or "")
             local success, result = pcall(function() return Http:JSONDecode(game:HttpGet(url)) end)
-            
             if success and result and result.data then
                 for _, s in ipairs(result.data) do
                     if s.id ~= game.JobId and s.playing < s.maxPlayers then
-                        Teleport:TeleportToPlaceInstance(placeId, s.id, game.Players.LocalPlayer)
-                        return
+                        Teleport:TeleportToPlaceInstance(placeId, s.id, game.Players.LocalPlayer) return
                     end
                 end
                 if result.nextPageCursor then cursor = result.nextPageCursor else break end
             end
             task.wait(0.2)
         end
-        btn.Text = "KHÔNG TÌM THẤY!"
-        task.wait(1.5)
-        btn.Text = "SERVER VIP (1 MÌNH)"
+        btn.Text = "KHÔNG TÌM THẤY!" task.wait(1.5) btn.Text = "SERVER VIP (1 MÌNH)"
     end)
 end
 
@@ -101,7 +96,6 @@ if not TY:FindFirstChild("MainFrame") then
     end)
 end
 
--- Vòng lặp chính xử lý tính năng (Speed, Skip E, Noclip, Auto E, ESP)
 task.spawn(function()
     while task.wait(0.05) do
         local lp = game.Players.LocalPlayer
@@ -119,18 +113,34 @@ task.spawn(function()
         end
         if _G.ESP then
             for _, p in pairs(game.Players:GetPlayers()) do
-                if p ~= lp and p.Character and p.Character:FindFirstChild("Head") then
-                    local h = p.Character.Head local e = h:FindFirstChild("TY_ESP") or Instance.new("BillboardGui", h)
-                    if e.Name ~= "TY_ESP" then
-                        e.Name, e.Size, e.StudsOffset, e.AlwaysOnTop = "TY_ESP", UDim2.new(0, 100, 0, 40), Vector3.new(0, 2, 0), true
-                        local l = Instance.new("TextLabel", e) l.Name, l.Size, l.BackgroundTransparency, l.Font, l.TextSize = "EspLabel", UDim2.new(1,0,1,0), 1, Enum.Font.SourceSansBold, 14
+                if p ~= lp and p.Character then
+                    if p.Character:FindFirstChild("Head") then
+                        local h = p.Character.Head local e = h:FindFirstChild("TY_ESP") or Instance.new("BillboardGui", h)
+                        if e.Name ~= "TY_ESP" then
+                            e.Name, e.Size, e.StudsOffset, e.AlwaysOnTop = "TY_ESP", UDim2.new(0, 300, 0, 20), Vector3.new(0, 2.5, 0), true
+                            local l = Instance.new("TextLabel", e) l.Name, l.Size, l.BackgroundTransparency, l.Font, l.TextSize = "EspLabel", UDim2.new(1,0,1,0), 1, Enum.Font.SourceSansBold, 15
+                            l.TextStrokeTransparency = 0
+                        end
+                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                        local dist = 0
+                        if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("HumanoidRootPart") then
+                            dist = math.floor((lp.Character.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude)
+                        end
+                        if hum then 
+                            e.EspLabel.Text = "Name: " .. p.Name .. " | Health: " .. math.floor(hum.Health) .. " | Studs: " .. dist
+                        end
                     end
-                    local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                    if hum then e.EspLabel.Text = p.Name .. "\nHP: " .. math.floor(hum.Health) end
+                    local hl = p.Character:FindFirstChild("TY_Highlight") or Instance.new("Highlight", p.Character)
+                    if hl.Name ~= "TY_Highlight" then
+                        hl.Name, hl.FillTransparency, hl.OutlineTransparency = "TY_Highlight", 0.5, 0
+                    end
                 end
             end
         else
-            for _, p in pairs(game.Players:GetPlayers()) do pcall(function() p.Character.Head.TY_ESP:Destroy() end) end
+            for _, p in pairs(game.Players:GetPlayers()) do 
+                pcall(function() p.Character.Head.TY_ESP:Destroy() end) 
+                pcall(function() p.Character.TY_Highlight:Destroy() end)
+            end
         end
     end
 end)
@@ -166,7 +176,10 @@ task.spawn(function()
             if obj:IsA("UIStroke") then obj.Color = col elseif obj:IsA("TextLabel") then obj.TextColor3 = col end
         end
         if _G.ESP then
-            for _, p in pairs(game.Players:GetPlayers()) do pcall(function() p.Character.Head.TY_ESP.EspLabel.TextColor3 = col end) end
+            for _, p in pairs(game.Players:GetPlayers()) do 
+                pcall(function() p.Character.Head.TY_ESP.EspLabel.TextColor3 = col end) 
+                pcall(function() p.Character.TY_Highlight.FillColor = col p.Character.TY_Highlight.OutlineColor = col end) 
+            end
         end
     end
 end)
